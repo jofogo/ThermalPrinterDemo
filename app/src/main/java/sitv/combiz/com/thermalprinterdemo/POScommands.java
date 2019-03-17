@@ -10,8 +10,9 @@ import android.util.Log;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 
-public class PrinterSettings {
+public class POScommands {
     private BTSettings mBTSettings;
     private BluetoothSocket mBluetoothSocket;
     private OutputStream printStream = null;
@@ -129,17 +130,32 @@ public class PrinterSettings {
         writeTo(chr_linefeed);
     }
 
+    public void SendDataByte(byte[] data) {
+        writeTo(data);
+    }
+
+    public void SendDataString(String data) {
+        try {
+
+            writeTo(data.getBytes("GBK"));
+        } catch (UnsupportedEncodingException uee) {
+
+        }
+    }
+
+
     public void imgBarcode (String msg) {
         byte[] barcodeModel = {0x1D, 0x28, 0x6B, 0x04, 0x00, 0x31, 0x41, 0x31, 0x00};
         byte[] barcodeSize = {0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x43, 0x31};
         byte[] barcodeCorrection = {0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x45, 0x31};
         byte[] barcodeStore = {0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x45, 0x31};
+//        byte[] barcodeTest = {chr_Esc, 0x90, };
         //1D		28		6B		03		00		31		51		m
         byte[] barcodePrint = {0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x51, 0x30};
         writeTo(fmt_initialize);
-        writeTo(barcodeModel);
-        writeTo(barcodeSize);
-        writeTo(barcodeCorrection);
+        //writeTo(barcodeModel);
+        //writeTo(barcodeSize);
+        //writeTo(barcodeCorrection);
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream( );
         try {
@@ -202,6 +218,87 @@ public class PrinterSettings {
         writeTo(reverseOff);
     }
 
+    public void writeBarCode() {} {
+
+    }
+
+    public static byte[] getBarCommand(String str, int nVersion, int nErrorCorrectionLevel,
+                                       int nMagnification){
+
+        if(nVersion<0 | nVersion >19 | nErrorCorrectionLevel<0 | nErrorCorrectionLevel > 3
+                | nMagnification < 1 | nMagnification > 8){
+            return null;
+        }
+
+        byte[] bCodeData = null;
+        try
+        {
+            bCodeData = str.getBytes("GBK");
+
+        }
+        catch (UnsupportedEncodingException e)
+        {
+            e.printStackTrace();
+            return null;
+        }
+
+        byte[] command = new byte[bCodeData.length + 7];
+
+        command[0] = 27;
+        command[1] = 90;
+        command[2] = ((byte)nVersion);
+        command[3] = ((byte)nErrorCorrectionLevel);
+        command[4] = ((byte)nMagnification);
+        command[5] = (byte)(bCodeData.length & 0xff);
+        command[6] = (byte)((bCodeData.length & 0xff00) >> 8);
+        System.arraycopy(bCodeData, 0, command, 7, bCodeData.length);
+
+        return command;
+    }
+
+
+    public static byte[] getCodeBarCommand(String str, int nType, int nWidthX, int nHeight,
+                                           int nHriFontType, int nHriFontPosition){
+
+        if (nType < 0x41 | nType > 0x49 | nWidthX < 2 | nWidthX > 6
+                | nHeight < 1 | nHeight > 255 | str.length() == 0)
+            return null;
+
+        byte[] bCodeData = null;
+        try
+        {
+            bCodeData = str.getBytes("GBK");
+
+        }
+        catch (UnsupportedEncodingException e)
+        {
+            e.printStackTrace();
+            return null;
+        }
+
+        byte[] command = new byte[bCodeData.length + 16];
+
+        command[0] = 29;
+        command[1] = 119;
+        command[2] = ((byte)nWidthX);
+        command[3] = 29;
+        command[4] = 104;
+        command[5] = ((byte)nHeight);
+        command[6] = 29;
+        command[7] = 102;
+        command[8] = ((byte)(nHriFontType & 0x01));
+        command[9] = 29;
+        command[10] = 72;
+        command[11] = ((byte)(nHriFontPosition & 0x03));
+        command[12] = 29;
+        command[13] = 107;
+        command[14] = ((byte)nType);
+        command[15] = (byte)(byte) bCodeData.length;
+        System.arraycopy(bCodeData, 0, command, 16, bCodeData.length);
+
+
+        return command;
+    }
 
 
 }
