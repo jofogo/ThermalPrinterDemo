@@ -21,7 +21,6 @@ import java.io.OutputStream;
 public class MainActivity extends AppCompatActivity {
 
     private static final int REQUEST_ENABLE_BT = 1;
-    private Button btnSetEncoding;
     private Button btnTestConnection;
     private Button btnPrint;
     BTSettings btSettings;
@@ -34,7 +33,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         EditText txtPrinter = (EditText) findViewById(R.id.txtPrinter);
-        btnSetEncoding = (Button) findViewById(R.id.btnSetEncoding);
         btnTestConnection = (Button) findViewById(R.id.btnTestConnection);
         btnPrint = (Button) findViewById(R.id.btnPrint);
         btSettings = new BTSettings();
@@ -89,14 +87,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void stateBTFound() {
-        btnSetEncoding.setEnabled(true);
         btnTestConnection.setEnabled(true);
         btnPrint.setEnabled(true);
-        btnPrint.setVisibility(View.VISIBLE);
+        //btnPrint.setVisibility(View.VISIBLE);
     }
 
     private void stateBTMissing() {
-        btnSetEncoding.setEnabled(false);
         btnTestConnection.setEnabled(false);
         btnPrint.setEnabled(false);
         btnPrint.setVisibility(View.INVISIBLE);
@@ -133,6 +129,8 @@ public class MainActivity extends AppCompatActivity {
                 pt.textUnderline(" Underlined text", 1);
                 pt.textLF();
                 pt.textReverse("This is a sample print message @Combiz2019");
+                pt.textLF();
+                pt.textLF();
                 pt.textLF();
                 getOutputStream().flush();
                 Log.i("Print Status", "Test print successful!");
