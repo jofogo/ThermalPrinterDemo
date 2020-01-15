@@ -12,6 +12,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.ByteArrayOutputStream;
@@ -23,6 +24,8 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_ENABLE_BT = 1;
     private Button btnTestConnection;
     private Button btnPrint;
+    private EditText txtContent;
+    private EditText txtTitle;
     BTSettings btSettings;
     PrinterSettings pt;
     OutputStream mOutputStream = null;
@@ -33,8 +36,11 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         EditText txtPrinter = (EditText) findViewById(R.id.txtPrinter);
+        txtContent = (EditText) findViewById(R.id.txtContent);
+        txtTitle = (EditText) findViewById(R.id.txtTitle);
         btnTestConnection = (Button) findViewById(R.id.btnTestConnection);
         btnPrint = (Button) findViewById(R.id.btnPrint);
+
         btSettings = new BTSettings();
         btSettings.setBluetoothAdapter();
         stateBTMissing();
@@ -109,6 +115,30 @@ public class MainActivity extends AppCompatActivity {
         return android.util.Base64.decode(encodedImage, android.util.Base64.DEFAULT);*/
     }
 
+    private String getTxtTitle() {
+        String tmp = "Combiz";
+        try {
+            if (txtTitle.getText().toString().length() > 0) {
+                return txtTitle.getText().toString();
+            }
+        } catch (NullPointerException npe) {
+            return tmp;
+        }
+        return tmp;
+    }
+
+    private String getTxtContent() {
+        String tmp = "https://goo.gl/maps/mpxZFWBrcXT2";
+        try {
+            if (txtContent.getText().toString().length() > 0) {
+                return txtContent.getText().toString();
+            }
+        } catch (NullPointerException npe) {
+            return tmp;
+        }
+        return tmp;
+    }
+
     public void printTest(View view) {
         if (canPrint && getOutputStream() != null) {
             try {
@@ -116,8 +146,11 @@ public class MainActivity extends AppCompatActivity {
                 pt.initialize();
                 pt.textTitle("Combiz TestPrint");
                 //pt.imgLogo(getLogo());
-                pt.textTitle2("Combiz");
-                pt.imgBarcode("https://combizcorp.com:2096");
+                //Toast.makeText(this, getTxtTitle(), Toast.LENGTH_SHORT).show();
+                pt.textTitle2(getTxtTitle());
+                pt.imgBarcode(getTxtContent());
+                //Bitmap bmp = BitmapFactory.decodeResource(getResources(), R.drawable.logo);
+                //pt.imgBitmap(bmp);
                 pt.textSmall("Small text");
                 pt.textLF();
                 pt.textMedium("Medium text");

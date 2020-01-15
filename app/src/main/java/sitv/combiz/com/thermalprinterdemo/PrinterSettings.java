@@ -10,6 +10,7 @@ import android.util.Log;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 
 public class PrinterSettings {
     private BTSettings mBTSettings;
@@ -129,31 +130,96 @@ public class PrinterSettings {
         writeTo(chr_linefeed);
     }
 
-    public void imgBarcode (String msg) {
-        byte[] barcodeModel = {0x1D, 0x28, 0x6B, 0x04, 0x00, 0x31, 0x41, 0x31, 0x00};
-        byte[] barcodeSize = {0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x43, 0x31};
-        byte[] barcodeCorrection = {0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x45, 0x31};
-        byte[] barcodeStore = {0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x45, 0x31};
-        //1D		28		6B		03		00		31		51		m
-        byte[] barcodePrint = {0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x51, 0x30};
-        writeTo(fmt_initialize);
-        writeTo(barcodeModel);
-        writeTo(barcodeSize);
-        writeTo(barcodeCorrection);
+    public static byte[] getBarCommand(String str, int nVersion, int nErrorCorrectionLevel,
+                                       int nMagnification){
 
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream( );
-        try {
-            outputStream.write(barcodeStore);
-            outputStream.write(msg.getBytes());
-            byte[] imgBarcodeStore = outputStream.toByteArray();
-            writeTo(imgBarcodeStore);
-            writeTo(chr_linefeed);
-            writeTo(barcodePrint);
-        } catch (IOException ioe) {
+        if(nVersion<0 | nVersion >19 | nErrorCorrectionLevel<0 | nErrorCorrectionLevel > 3
+                | nMagnification < 1 | nMagnification > 8){
+            return null;
+        }
+
+        byte[] bCodeData = null;
+        try
+        {
+            bCodeData = str.getBytes("GBK");
 
         }
+        catch (UnsupportedEncodingException e)
+        {
+            e.printStackTrace();
+            return null;
+        }
+
+        byte[] command = new byte[bCodeData.length + 7];
+
+        command[0] = 27;
+        command[1] = 90;
+        command[2] = ((byte)nVersion);
+        command[3] = ((byte)nErrorCorrectionLevel);
+        command[4] = ((byte)nMagnification);
+        command[5] = (byte)(bCodeData.length & 0xff);
+        command[6] = (byte)((bCodeData.length & 0xff00) >> 8);
+        System.arraycopy(bCodeData, 0, command, 7, bCodeData.length);
+
+        return command;
+    }
+
+
+
+    public void imgBarcode (String msg) {
+        byte[] code = getBarCommand(msg,1,3,8);
+        writeTo(new byte[]{0x1b, 0x61, 0x00});
+        writeTo(code);
+
         writeTo(chr_linefeed);
     }
+
+    public void imgBitmap(Bitmap bmp){
+
+        int width = bmp.getWidth();
+        int height = bmp.getHeight();
+        byte data[]=new byte[1024*10];
+        data[0] = 0x1D;
+        data[1] = 0x2A;
+        data[2] =(byte)( (width - 1)/ 8 + 1);
+        data[3] =(byte)( (height - 1)/ 8 + 1);
+        byte k = 0;
+        int position = 4;
+        int i;
+        int j;
+        byte temp = 0;
+        for(i = 0; i <width;  i++){
+
+            for(j = 0; j < height; j++){
+                if(bmp.getPixel(i, j) != -1){
+                    temp |= (0x80 >> k);
+                } // end if
+                k++;
+                if(k == 8){
+                    data[position++] = temp;
+                    temp = 0;
+                    k = 0;
+                } // end if k
+            }// end for j
+            if(k % 8 != 0){
+                data[position ++] = temp;
+                temp = 0;
+                k = 0;
+            }
+
+        }
+
+        if( width% 8 != 0){
+            i =   height/ 8;
+            if(height % 8 != 0) i++;
+            j = 8 - (width % 8);
+            for(k = 0; k < i*j; k++){
+                data[position++] = 0;
+            }
+        }
+        writeTo(data);
+    }
+
 
     public void textUnderline (String msg, int thickness) {
         if (thickness >= 2) {
